@@ -1,0 +1,10 @@
+<clientscript scriptid="customscript_jj_cs_empname_otp7448">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>JJ CS Employee Name</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/jobinandjismi/jj_cs_employee_name.js]</scriptfile>
+</clientscript>
