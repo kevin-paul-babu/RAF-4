@@ -10,13 +10,12 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
  * @param{url} url
  */
     (record, search, serverWidget, url) => {
-        /**
-         * Defines the Suitelet script trigger point.
-         * @param {Object} scriptContext
-         * @param {ServerRequest} scriptContext.request - Incoming request
-         * @param {ServerResponse} scriptContext.response - Suitelet response
-         * @since 2015.2
-         */
+     
+
+          /**
+     * Function to get search results of active salesrep.
+     * @returns results -Search Results
+     */
         function employeeSearch(){
           try {
             let searchObj = search.create({
@@ -41,6 +40,11 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
             log.error("Error",e.message)
           }
         }
+          /**
+     * Function to get search results of 2%commission amount.
+     * @param employeeName 
+     * @returns results -Search Results
+     */
         function comissionSearch(employeeName){
           try {
             let searchObj =  search.create({
@@ -87,6 +91,15 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
           }
 
         }
+        
+          /**
+     * Function to create custom record .
+     * 
+     * @param request
+     * @param lineCount
+     * @param sublistId
+     * @returns recid  custom record id 
+     */
         function createCustomRecord(request,lineCount,sublistId){
             try{
                 let employeeName;
@@ -183,6 +196,13 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
                 log.errror("error",e.message) 
             }
         }
+           /**
+         * Defines the Suitelet script trigger point.
+         * @param {Object} scriptContext
+         * @param {ServerRequest} scriptContext.request - Incoming request
+         * @param {ServerResponse} scriptContext.response - Suitelet response
+         * @since 2015.2
+         */
         const onRequest = (scriptContext) => {
             try {
                 if(scriptContext.request.method ==="GET"){
