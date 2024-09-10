@@ -39,6 +39,9 @@ function(currentRecord, url) {
 
         window.setTimeout(getValues(),30000)
     }
+     /**
+     * Function to get employee name.
+     */
     function getValues(){
      try {
         let currRecord = currentRecord.get();
