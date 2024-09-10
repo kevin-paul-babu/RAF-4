@@ -2,6 +2,24 @@
  * @NApiVersion 2.1
  * @NScriptType Suitelet
  */
+
+/**************************************************
+ * SuiteScript Training
+ * OTP-7491 : Suitelet Form to Create Custom Record && Expense Report
+ * 
+ * *******************************************************************
+ * 
+ * Author : Jobin and Jismi IT Services LLP.
+ * 
+ * Date Created : 10 September 2024
+ * 
+ * Description : Create Suitelet Form to Create Custom Record && Expense Report using 2%commission amount for active sales rep 
+ * REVISION HISTORY 
+ * @version  1.0 : : 10 September 2024 : Created the initial build  by  JJ0341 
+ * 
+ * 
+ *
+ **********************************************************************************************/
 define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
     /**
  * @param{record} record
