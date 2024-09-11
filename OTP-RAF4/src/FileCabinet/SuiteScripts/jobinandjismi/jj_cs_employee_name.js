@@ -46,6 +46,7 @@ function(currentRecord, url) {
      try {
         let currRecord = currentRecord.get();
         let employeeName = currRecord.getValue({ fieldId: "custpage_jj_salesrep"});
+        // let amount       = currRecord.getValue({ fieldId: "custpage_jj_emp_amount"});
         console.log("employee",employeeName);
         document.location = url.resolveScript({
             deploymentId: "customdeploy_jj_sl_emp_comcal_otp7448",

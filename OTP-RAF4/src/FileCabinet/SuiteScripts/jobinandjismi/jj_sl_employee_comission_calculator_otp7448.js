@@ -55,7 +55,7 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
              return results
             
           } catch (e) {
-            log.error("Error",e.message)
+            log.error("Error",e.message+e.stack)
           }
         }
           /**
@@ -66,9 +66,10 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
         function comissionSearch(employeeName){
           try {
             let searchObj =  search.create({
-                type: "salesorder",
+                type: "transaction",
                 filters:
-                [
+                [   ["type","anyof","CustInvc","CashSale"],
+                    "AND", 
                    ["mainline","is","T"], 
                    "AND", 
                    ["trandate","within","lastyear"], 
@@ -80,19 +81,24 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
                     search.createColumn({
                         name: "internalid",
                         join: "salesRep",
-                        label: "Internal ID"
+                        label: "Internal ID",
+                        summary: "GROUP",
+                        
                      }),
-                     search.createColumn({name: "salesrep", label: "Sales Rep"}),
+                     search.createColumn({name: "salesrep", label: "Sales Rep",summary: "GROUP",}),
                      search.createColumn({
                         name: "isinactive",
                         join: "salesRep",
-                        label: "Inactive"
+                        label: "Inactive",
+                        summary: "GROUP",
+                        
                      }),
-                     search.createColumn({name: "amount", label: "Amount"}),
+                     search.createColumn({name: "amount", label: "Amount",summary: "SUM",}),
                      search.createColumn({
                         name: "formulanumeric",
-                        formula: "({amount}*2)/100",
-                        label: "Formula (Numeric)"
+                        formula: "ROUND(({amount}*2)/100,2)",
+                        label: "Formula (Numeric)",
+                        summary: "SUM"
                      })
                 ]
              });
@@ -105,113 +111,69 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
              return results
 
           } catch (e) {
-            log.errror("error",e.message)
+            log.errror("error",e.message+e.stack)
           }
 
         }
-        
+       
           /**
      * Function to create custom record .
      * 
      * @param request
-     * @param lineCount
-     * @param sublistId
      * @returns recid  custom record id 
      */
-        function createCustomRecord(request,lineCount,sublistId){
+        function createCustomRecord(empName,commAmount){
             try{
-                let employeeName;
-                let empid;
-                let commAmount;
-                let status;
-
-                for(let i=0;i<lineCount;i++){
-                    let select = request.getSublistValue({
-                        group: sublistId,
-                        line:i,
-                        name: "custpage_jj_emp_select"
-                    });
-                    if(select ==='T'){
-          
-                        empid = request.getSublistValue({
-                            group: sublistId,
-                            line:i,
-                            name: "custpage_jj_emp_id"
-                        });
-                        employeeName  = request.getSublistValue({
-                            group: sublistId,
-                            line:i,
-                            name: "custpage_jj_emp_name"
-                        });
-                        status  = request.getSublistValue({
-                            group: sublistId,
-                            line:i,
-                            name: "custpage_jj_emp_status"
-                        });
-                        commAmount  = request.getSublistValue({
-                            group: sublistId,
-                            line:i,
-                            name: "custpage_jj_emp_amount"
-                        });
-                      
-                }
-
-            }
-            let recordObj = record.create({
-                type: "customrecord_jj_emp_comm_rec_otp7448",
-                isDynamic: true
-            })
-            recordObj.setValue({
-                fieldId: "custrecord_jj_emp_id",
-                value: empid,
-                ignoreFieldChange:true
-            })
-            if(status ==="Active"){
-                recordObj.setValue({
-                    fieldId: "custrecord_jj_emp_status_otp7448",
-                    value: true,
-                    ignoreFieldChange:true
-                })
-            }
-            else{
-                recordObj.setValue({
-                    fieldId: "custrecord_jj_emp_status_otp7448",
-                    value: false,
-                    ignoreFieldChange:true
-                })
-            }
-         
-            recordObj.setValue({
-                fieldId: "custrecord_jj_emp_name",
-                value: employeeName,
-                ignoreFieldChange:true
-            })
-            recordObj.setValue({
-                fieldId: "custrecord_jj_emp_comm_otp7448",
-                value: commAmount,
-                ignoreFieldChange:true
-            })
-            let recid = recordObj.save();
-            let lookupSearchObj  = search.lookupFields({
-                type: "customrecord_jj_emp_comm_rec_otp7448",
-                id: recid,
-                columns: ['custrecord_jj_emp_id']
-            });
-            let employeeId = lookupSearchObj.custrecord_jj_emp_id;
-            if(employeeId === empid){
-                let updateobj = record.submitFields({
+                let searchObj = search.create({
                     type: "customrecord_jj_emp_comm_rec_otp7448",
-                    id: recid,
-                    values: {
-                        'custrecord_jj_emp_comm_otp7448':commAmount
-                    }
-                })
-            
-            }
-            // let empAdvId = createExpenseReport(empid);
+                    filters:
+                    [
+                        'custrecord_jj_emp_name','is',empName
+                    ],
+                    columns:
+                    ['custrecord_jj_emp_name','internalid']
+                 });
+                 let results = searchObj.run().getRange({
+                    start: 0,
+                    end: 1
+                 });
+                 log.debug("results",results);
+                 let employeeName,internalid;
+                 results.forEach(result => {
+                employeeName = result.getValue('custrecord_jj_emp_name');
+                log.debug("employeeName02",employeeName);
+                internalid =  result.getValue('internalid');
+             });
+            if(employeeName == empName){
+                            record.submitFields({
+                                type: "customrecord_jj_emp_comm_rec_otp7448",
+                                id: internalid,
+                                values: {
+                                    'custrecord_jj_emp_comm_otp7448':commAmount
+                                }
+                            })
+                            log.debug("record exists");
+                        }
+                        else{   
+                                let recordObj = record.create({
+                                    type: "customrecord_jj_emp_comm_rec_otp7448",
+                                    isDynamic: true
+                                })
+                                    recordObj.setValue({
+                                        fieldId: "custrecord_jj_emp_name",
+                                        value: empName,
+                                        ignoreFieldChange:true
+                                    })
+                                    recordObj.setValue({
+                                        fieldId: "custrecord_jj_emp_comm_otp7448",
+                                        value: commAmount,
+                                        ignoreFieldChange:true
+                                    })
+                                    recid = recordObj.save();
+           }
             return recid;
             }catch(e){
-                log.errror("error",e.message) 
+                log.error("error",e.message+e.stack) 
             }
         }
            /**
@@ -240,16 +202,16 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
                     });
                     
                     let results = employeeSearch();
-                    
+                    employee.addSelectOption({
+                        value: "",
+                        text:""
+                    })
+                        
                     for(let i = 0;i<results.length;i++){
                         // let name =  results[i].getValue({
                         //     name: "entityid"
                         // })
-                        employee.addSelectOption({
-                            value: "",
-                            text:""
-                        })
-                            
+                       
                         employee.addSelectOption({
                             value: results[i].getValue({
                                 name: "internalid"
@@ -259,37 +221,13 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
                             })
                         })
                     }
-                    let subList = form.addSublist({
-                        id: "custpage_jj_emp_sublist",
-                        label: "Employee Comission Calculator",
-                        type:serverWidget.SublistType.LIST
-                    });
-
-                    subList.addField({
-                        id: "custpage_jj_emp_id",
-                        label: "Employee Id",
-                        type: serverWidget.FieldType.INTEGER
-                    });
-                    subList.addField({
-                        id: "custpage_jj_emp_name",
-                        label: "Employee Name",
-                        type: serverWidget.FieldType.TEXT
-                    });
-                    subList.addField({
-                        id: "custpage_jj_emp_status",
-                        label: "Status",
-                        type: serverWidget.FieldType.TEXT
-                    });
-                   let amount =  subList.addField({
+                    let amount = form.addField({
                         id: "custpage_jj_emp_amount",
                         label: "Commission Amount",
-                        type: serverWidget.FieldType.CURRENCY
+                        type: serverWidget.FieldType.CURRENCY,
+                        container:"custpage_jj_filter"
                     });
-                    subList.addField({
-                        id: "custpage_jj_emp_select",
-                        label: "Select",
-                        type: serverWidget.FieldType.CHECKBOX
-                    });
+              
                     form.addSubmitButton({
                         label: "Submit"
                     })
@@ -299,75 +237,38 @@ define(['N/record', 'N/search', 'N/ui/serverWidget', 'N/url'],
                   if(employeeName){
                     let results = comissionSearch(employeeName);
                     for(let i = 0;i<results.length;i++){
-                    subList.setSublistValue({
-                        id: "custpage_jj_emp_id",
-                        line: i,
-                        value: results[i].getValue({
-                            name: "internalid",
-                            join: "salesRep",
-                            label: "Internal ID"
-                        })
-                        });
-                    subList.setSublistValue({
-                        id: "custpage_jj_emp_name",
-                        line: i,
-                        value: results[i].getText({
-                         name: "salesrep", 
-                         label: "Sales Rep"
-                        })
-                        })
-                        let check = results[i].getValue({
-                            name: "isinactive",
-                            join: "salesRep",
-                            label: "Inactive"
-                        });
-                        if(check === false){
-                             subList.setSublistValue({
-                            id: "custpage_jj_emp_status",
-                            line: i,
-                            value: "Active"
-                            })
-                        }
-                        else{
-                            subList.setSublistValue({
-                                id: "custpage_jj_emp_status",
-                                line: i,
-                                value: "Inactive"
-                                })
-                        }
-                       
-                    subList.setSublistValue({
-                        id: "custpage_jj_emp_amount",
-                        line: i,
-                        value: results[i].getValue({
-                            name: "formulanumeric",
-                            formula: "({amount}*2)/100",
-                            label: "Formula (Numeric)"
-                        })
-                        })
-                    amount.updateDisplayType({
-                        displayType: serverWidget.FieldDisplayType.ENTRY
-                    });
+                    amount.defaultValue = results[i].getValue({
+                        name: "formulanumeric",
+                        formula: "ROUND(({amount}*2)/100,2)",
+                        label: "Formula (Numeric)",
+                        summary: "SUM",
+                    })
                     }
                   }
 
 
                     scriptContext.response.writePage(form)
             }else{
-                let request = scriptContext.request;
-                let sublistid = 'custpage_jj_emp_sublist';
-                let lineCount  = request.getLineCount({
-                    group: sublistid
-                });
-                let body ;
-                if(lineCount>0){
-                    let recid = createCustomRecord(request,lineCount,sublistid);
-                    body = "recid"+recid;
-                }
+                let employeeId = scriptContext.request.parameters.custpage_jj_salesrep;
+                let commAmount  = scriptContext.request.parameters.custpage_jj_emp_amount;
+                
+                log.debug("employee Name0 ",employeeId);
+                 let lookupSearchObj  = search.lookupFields({
+                    type: search.Type.EMPLOYEE,
+                    id: employeeId,
+                    columns: ['entityid']
+                    });
+                let empName = lookupSearchObj.entityid;
+                log.debug("employee Name ",empName);
+                log.debug("amount",commAmount);
+                let body;
+                let recid = createCustomRecord(empName,commAmount);
+                body = "recid"+recid;
+                
                 scriptContext.response.write(body)
             }
             } catch (e) {
-                log.error("Error",e.message)
+                log.error("Error",e.message+e.stack)
             }
 
         }
